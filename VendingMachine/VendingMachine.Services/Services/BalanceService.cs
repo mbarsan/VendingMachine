@@ -55,6 +55,7 @@ namespace VendingMachine.Services.Data
 
             if (sumToRefund == 0)
             {
+                _balance = 0;
                 return new List<Coin>();
             }
             List<Coin> coinsToRemove = [];

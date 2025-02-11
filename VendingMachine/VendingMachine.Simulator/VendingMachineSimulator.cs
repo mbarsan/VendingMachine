@@ -14,57 +14,32 @@ namespace VendingMachine.Simulator
 
         public async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            bool restart = true;
-            bool fromTheStart = true;
-
             do
             {
-                if (fromTheStart)
+                int start = StartProcedure();
+                if (start == -1)
                 {
-                    int start = StartProcedure();
-                    if (start == -1)
-                    {
-                        return;
-                    }
-                    if (start == 0)
-                    {
-                        fromTheStart = true;
-                        continue;
-                    }
+                    return;
                 }
-
+                if (start == 0)
+                {
+                    continue;
+                }
+                
                 bool proceed = await RequestAddCoinsAsync(cancellationToken);
                 if (!proceed)
                 {
-                    restart = RestartConfirmation();
-                    if (restart)
-                    {
-                        fromTheStart = false;
-                        continue;
-                    }
+                    continue;
                 }
 
                 int productId = await RequestTheProductSelectionAsync(cancellationToken);
                 if (productId == -1)
                 {
-                    restart = RestartConfirmation();
-                    if (restart)
-                    {
-                        fromTheStart = false;
-                        continue;
-                    }
+                    continue;
                 }
 
                 await DeliverTheProductAsync(productId, cancellationToken);
-                restart = RestartConfirmation();
-                if (restart)
-                {
-                    fromTheStart = false;
-                    continue;
-                }
-                restart = true;
-                fromTheStart = true;
-            } while (restart);
+            } while (true);
         }
 
         private async Task<bool> RequestAddCoinsAsync(CancellationToken cancellationToken)
@@ -74,7 +49,7 @@ namespace VendingMachine.Simulator
             string? option = "y";
             do
             {
-                Console.Write("Coin type:");
+                Console.Write("Coin type: ");
                 decimal value = 0;
 
                 do
@@ -138,7 +113,6 @@ namespace VendingMachine.Simulator
                 if (option == "c")
                 {
                     await _vendingMachineService.RefundBalanceAsync();
-                    Console.WriteLine("Have a nice day!");
                     return -1;
                 }
             } while (option == "n");
@@ -171,12 +145,14 @@ namespace VendingMachine.Simulator
                     if (change == -1)
                     {
                         Console.WriteLine("No available coins to deliver change. Please contact support.");
+                        break;
                     }
                     if (change > 0)
                     {
                         Console.WriteLine($"Please take your change {change}.");
+                        return;
                     }
-                    break;
+                    return;
                 }
                 else
                 {
@@ -202,13 +178,6 @@ namespace VendingMachine.Simulator
             return option;
         }
 
-        private bool RestartConfirmation()
-        {
-            Console.WriteLine("Do you want to order another product (y/n)?");
-            var option = Console.ReadLine();
-            return option == "y";
-        }
-
         //returns -1 to exit app, 0 to contiune to next iteration, 1 to continue into loop
         private int StartProcedure()
         {
@@ -219,6 +188,7 @@ namespace VendingMachine.Simulator
             if (option == "m")
             {
                 ResetVedingMachine();
+                Console.WriteLine("The vending machine was reset!");
                 return 0;
             }
 
